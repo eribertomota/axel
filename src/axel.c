@@ -205,6 +205,9 @@ axel_new(conf_t *conf, int count, const search_t *res)
 			 "no-clobber option\n"));
 	}
 
+	/* WSA startup for win32 */
+	WSAINIT();
+
 	do {
 		if (!conn_init(&axel->conn[0])) {
 			axel_message(axel, "%s", axel->conn[0].message);
@@ -732,6 +735,9 @@ axel_close(axel_t *axel)
 
 	/* this function can't be called with a partly initialized axel */
 	assert(axel->conn);
+
+	/* WSA cleanup for win32 */
+	WSAClose();
 
 	/* Terminate threads and close connections */
 	for (int i = 0; i < axel->conf->num_connections; i++) {

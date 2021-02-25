@@ -42,7 +42,7 @@
 #include <openssl/ssl.h>
 
 void ssl_init(conf_t *conf);
-SSL *ssl_connect(int fd, char *hostname);
+SSL *ssl_connect(SOCKET fd, char *hostname);
 void ssl_disconnect(SSL *ssl);
 bool ssl_validate_hostname(const char *hostname, const X509 *server_cert);
 

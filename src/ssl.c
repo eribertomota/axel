@@ -67,7 +67,7 @@ ssl_startup(void)
 }
 
 SSL *
-ssl_connect(int fd, char *hostname)
+ssl_connect(SOCKET fd, char *hostname)
 {
 	X509 *server_cert;
 	SSL_CTX *ssl_ctx;
@@ -88,8 +88,8 @@ ssl_connect(int fd, char *hostname)
 
 	int err = SSL_connect(ssl);
 	if (err <= 0) {
-		fprintf(stderr, _("SSL error: %s\n"),
-			ERR_reason_error_string(ERR_get_error()));
+		fprintf(stderr, _("SSL error: %s %d %d\n"),
+			ERR_reason_error_string(ERR_get_error()), err, errno);
 		SSL_CTX_free(ssl_ctx);
 		return NULL;
 	}

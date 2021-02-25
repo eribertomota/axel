@@ -291,7 +291,8 @@ conn_init(conn_t *conn)
 int
 conn_setup(conn_t *conn)
 {
-	if (conn->ftp->tcp.fd <= 0 && conn->http->tcp.fd <= 0)
+	if (SOCK_ISINVALID(conn->ftp->tcp.fd) &&
+			 SOCK_ISINVALID(conn->http->tcp.fd))
 		if (!conn_init(conn))
 			return 0;
 

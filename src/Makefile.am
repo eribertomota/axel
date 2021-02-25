@@ -3,6 +3,7 @@ axel_SOURCES = \
 	compat-android.h \
 	compat-bsd.h \
 	compat-ssl.h \
+	compat-win32.h \
 	src/abuf.c \
 	src/abuf.h \
 	src/axel.c \

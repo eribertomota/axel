@@ -44,10 +44,12 @@
 
 #include "config.h"
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
 #include <netinet/tcp.h>
+#endif
 #include "axel.h"
 
 #ifndef TCP_FASTOPEN_CONNECT
@@ -85,7 +87,7 @@ tcp_connect(tcp_t *tcp, char *hostname, int port, int secure, char *local_if,
 	struct addrinfo ai_hints;
 	struct addrinfo *gai_results, *gai_result;
 	int ret;
-	int sock_fd = -1;
+	SOCKET sock_fd = INVALID_SOCKET;
 
 	memset(&local_addr, 0, sizeof(local_addr));
 	if (local_if) {
@@ -116,14 +118,14 @@ tcp_connect(tcp_t *tcp, char *hostname, int port, int secure, char *local_if,
 	do {
 		int tcp_fastopen = -1;
 
-		if (sock_fd != -1) {
-			close(sock_fd);
-			sock_fd = -1;
+		if (sock_fd != INVALID_SOCKET) {
+			closesocket(sock_fd);
+			sock_fd = INVALID_SOCKET;
 		}
 		sock_fd = socket(gai_result->ai_family,
 				 gai_result->ai_socktype,
 				 gai_result->ai_protocol);
-		if (sock_fd == -1)
+		if (sock_fd == INVALID_SOCKET)
 			continue;
 
 		if (local_if && gai_result->ai_family == AF_INET) {
@@ -147,7 +149,11 @@ tcp_connect(tcp_t *tcp, char *hostname, int port, int secure, char *local_if,
 		if (ret != -1)
 			break;
 
+#ifdef _WIN32
+		if (WSAEWOULDBLOCK != WSAGetLastError())
+#else
 		if (errno != EINPROGRESS)
+#endif
 			continue;
 
 		/* With TFO we must assume success */
@@ -167,7 +173,7 @@ tcp_connect(tcp_t *tcp, char *hostname, int port, int secure, char *local_if,
 
 	freeaddrinfo(gai_results);
 
-	if (sock_fd == -1) {
+	if (sock_fd == INVALID_SOCKET) {
 		tcp_error(hostname, port, strerror(errno));
 		return -1;
 	}
@@ -178,7 +184,7 @@ tcp_connect(tcp_t *tcp, char *hostname, int port, int secure, char *local_if,
 	if (secure) {
 		tcp->ssl = ssl_connect(sock_fd, hostname);
 		if (tcp->ssl == NULL) {
-			close(sock_fd);
+			closesocket(sock_fd);
 			return -1;
 		}
 	}
@@ -186,9 +192,8 @@ tcp_connect(tcp_t *tcp, char *hostname, int port, int secure, char *local_if,
 	tcp->fd = sock_fd;
 
 	/* Set I/O timeout */
-	struct timeval tout = { .tv_sec  = io_timeout };
-	setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, &tout, sizeof(tout));
-	setsockopt(sock_fd, SOL_SOCKET, SO_SNDTIMEO, &tout, sizeof(tout));
+	SET_SOCK_TIMEOUT(sock_fd, SO_RCVTIMEO, io_timeout);
+	SET_SOCK_TIMEOUT(sock_fd, SO_SNDTIMEO, io_timeout);
 
 	return 1;
 }
@@ -201,35 +206,63 @@ tcp_read(tcp_t *tcp, void *buffer, int size)
 		return SSL_read(tcp->ssl, buffer, size);
 	else
 #endif				/* HAVE_SSL */
-		return read(tcp->fd, buffer, size);
+		return recv(tcp->fd, buffer, size, 0);
 }
 
 ssize_t
 tcp_write(tcp_t *tcp, void *buffer, int size)
 {
+	int ret;
 #ifdef HAVE_SSL
 	if (tcp->ssl != NULL)
-		return SSL_write(tcp->ssl, buffer, size);
+		ret = SSL_write(tcp->ssl, buffer, size);
 	else
 #endif				/* HAVE_SSL */
-		return write(tcp->fd, buffer, size);
+		ret = send(tcp->fd, buffer, size, 0);
+
+#ifdef _WIN32
+	if (ret < 0 && WSAENOTCONN == WSAGetLastError()) {
+		errno = EAGAIN;
+	}
+#endif
+	return ret;
 }
 
 void
 tcp_close(tcp_t *tcp)
 {
-	if (tcp->fd > 0) {
+	if (tcp->fd != INVALID_SOCKET) {
 #ifdef HAVE_SSL
 		if (tcp->ssl != NULL) {
 			ssl_disconnect(tcp->ssl);
 			tcp->ssl = NULL;
 		}
 #endif
-		close(tcp->fd);
-		tcp->fd = -1;
+		closesocket(tcp->fd);
+		tcp->fd = INVALID_SOCKET;
 	}
 }
 
+#ifdef _WIN32
+int
+get_if_ip(char *dst, size_t len, const char *iface)
+{
+	char name[155];
+    PHOSTENT hostinfo;
+	int ret = 0;
+
+	if (!gethostname(name, sizeof(name)))
+		return 0;
+
+	/* FIXME gethostbyname should be replaced */
+    if ((hostinfo = gethostbyname(name))) {
+		strlcpy(dst, inet_ntoa(*(struct in_addr *)*hostinfo->h_addr_list), len);
+		ret = 1;
+    }
+
+	return ret;
+}
+#else /* !_WIN32 */
 int
 get_if_ip(char *dst, size_t len, const char *iface)
 {
@@ -253,3 +286,4 @@ get_if_ip(char *dst, size_t len, const char *iface)
 
 	return ret;
 }
+#endif /* !_WIN32 */

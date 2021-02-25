@@ -51,6 +51,14 @@ AS_CASE(["$host_os"],
     AC_DEFINE([_WIN32_WINNT], [0x0600],
               [Request NT 6 API to expose AI_ADDRCONFIG in WinSock2])
   ])
+    AC_DEFINE([WIN32_LEAN_AND_MEAN], [],
+              [Avoid some OpenSSL macros redefined by MinGW])
+
+    LIBS="$LIBS -lws2_32"
+    PTHREAD_CFLAGS="-static $PTHREAD_CFLAGS"
+    AS_IF([test "x$with_ssl" = xno], [], [
+        CFLAGS="$CFLAGS $SSL_CFLAGS"
+    ])
 AC_USE_SYSTEM_EXTENSIONS
 
 # Compiler checks
@@ -91,22 +99,23 @@ AC_PROG_INSTALL
 # Checks for libraries.
 
 # Checks for header files.
-AC_CHECK_HEADERS([ \
-	arpa/inet.h \
-	fcntl.h \
-	limits.h \
-	locale.h \
-	netdb.h \
-	netinet/in.h \
-	stdlib.h \
-	sys/ioctl.h \
-	sys/socket.h \
-	sys/time.h \
-	unistd.h \
-],, [
-    AC_MSG_ERROR([$ac_header is required.])
+AS_IF([test "x$host_os" = "x${host_os%mingw32}"], [
+  AC_CHECK_HEADERS([ \
+    arpa/inet.h \
+    fcntl.h \
+    limits.h \
+    locale.h \
+    netdb.h \
+    netinet/in.h \
+    stdlib.h \
+    sys/ioctl.h \
+    sys/socket.h \
+    sys/time.h \
+    unistd.h \
+  ],, [
+      AC_MSG_ERROR([$ac_header is required.])
+  ])
 ])
-
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
 
@@ -166,8 +175,10 @@ AC_REPLACE_FUNCS([ \
 	strlcat \
 ])
 
-# Check for missing features/flags
-AXEL_CHECK_MACRO([O_NONBLOCK], [fcntl.h])
+AS_IF([test "x$host_os" = "x${host_os%mingw32}"], [
+  # Check for missing features/flags
+  AXEL_CHECK_MACRO([O_NONBLOCK], [fcntl.h])
+])
 
 # Optional (but included-by-default) ssl support
 AC_ARG_WITH([ssl],
@@ -197,7 +208,6 @@ AM_GNU_GETTEXT_VERSION([0.11.1])
 AX_PTHREAD()
 
 #### Definitions ####
-
 
 # BSD vs GNU date
 AS_IF([date -j >/dev/null 2>&1], [

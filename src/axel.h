@@ -60,14 +60,17 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#ifndef _WIN32
 #include <netinet/in_systm.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <net/if.h>
+#endif /* !_WIN32 */
 #include <pthread.h>
 #include "compat-android.h"
 #include "compat-bsd.h"
+#include "compat-win32.h"
 #include "compat-ssl.h"
 
 /* GCC function attributes */
