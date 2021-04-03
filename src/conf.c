@@ -154,6 +154,7 @@ conf_loadfile(conf_t *conf, const char *file)
 			KEY(max_speed)
 			KEY(verbose)
 			KEY(alternate_output)
+			KEY(percentage)
 			KEY(insecure)
 			KEY(no_clobber)
 			KEY(search_timeout)
@@ -263,9 +264,9 @@ conf_init(conf_t *conf)
 
 	conf->interfaces->next = conf->interfaces;
 
-    /* Detect if stdout is a tty, set the default indicator to alternate.
-       Otherwise, keep it to original.*/
-    conf->alternate_output = isatty(STDOUT_FILENO);
+	/* Detect if stdout is a tty, set the default indicator to alternate.
+	   Otherwise, keep it to original.*/
+	conf->alternate_output = isatty(STDOUT_FILENO);
 
 	if ((s2 = getenv("http_proxy")) || (s2 = getenv("HTTP_PROXY")))
 		strlcpy(conf->http_proxy, s2, sizeof(conf->http_proxy));

@@ -58,6 +58,7 @@ typedef struct {
 	int alternate_output;
 	int insecure;
 	int no_clobber;
+	int percentage;
 
 	if_t *interfaces;
 
