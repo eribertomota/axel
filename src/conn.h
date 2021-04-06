@@ -107,7 +107,7 @@ typedef struct {
 	pthread_mutex_t lock;
 } conn_t;
 
-int conn_set(conn_t *conn, const char *set_url);
+int conn_set(conn_t *conn, const char *set_url, bool do_http_encode);
 char *conn_url(char *dst, size_t len, conn_t *conn);
 void conn_disconnect(conn_t *conn);
 int conn_init(conn_t *conn);

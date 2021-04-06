@@ -104,7 +104,7 @@ search_makelist(search_t *results, char *orig_url)
 
 	conn->conf = results->conf;
 	t = axel_gettime();
-	if (!conn_set(conn, orig_url) || !conn_init(conn) || !conn_info(conn))
+	if (!conn_set(conn, orig_url, true) || !conn_init(conn) || !conn_info(conn))
 		return -1;
 
 	size_t orig_len = strlcpy(results[0].url, orig_url,
@@ -136,7 +136,7 @@ search_makelist(search_t *results, char *orig_url)
 	memset(conn, 0, sizeof(conn_t));
 	conn->conf = results->conf;
 
-	if (!conn_set(conn, s))
+	if (!conn_set(conn, s, true))
 		goto done;
 
 	{
@@ -287,7 +287,7 @@ search_speedtest(void *r)
 
 	memset(conn, 0, sizeof(conn_t));
 	conn->conf = results->conf;
-	if (conn_set(conn, results->url)
+	if (conn_set(conn, results->url, true)
 	    && conn_init(conn)
 	    && conn_info(conn)
 	    && conn->size == results->size)

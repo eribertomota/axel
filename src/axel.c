@@ -173,7 +173,7 @@ axel_new(conf_t *conf, int count, const search_t *res)
 	u[count - 1].next = u;
 
 	axel->conn[0].conf = axel->conf;
-	if (!conn_set(&axel->conn[0], axel->url->text)) {
+	if (!conn_set(&axel->conn[0], axel->url->text, true)) {
 		axel_message(axel, _("Could not parse URL.\n"));
 		axel->ready = -1;
 		return axel;
@@ -444,7 +444,7 @@ axel_start(axel_t *axel)
 	   re-scan the URL for every conn */
 	url_ptr = axel->url;
 	for (i = 0; i < axel->conf->num_connections; i++) {
-		conn_set(&axel->conn[i], url_ptr->text);
+		conn_set(&axel->conn[i], url_ptr->text, false);
 		url_ptr = url_ptr->next;
 		axel->conn[i].local_if = axel->conf->interfaces->text;
 		axel->conf->interfaces = axel->conf->interfaces->next;
@@ -641,7 +641,7 @@ axel_do(axel_t *axel)
 				pthread_join(*(axel->conn[i].setup_thread),
 					     NULL);
 
-				conn_set(&axel->conn[i], url_ptr->text);
+				conn_set(&axel->conn[i], url_ptr->text, false);
 				url_ptr = url_ptr->next;
 				/* axel->conn[i].local_if = axel->conf->interfaces->text;
 				   axel->conf->interfaces = axel->conf->interfaces->next; */

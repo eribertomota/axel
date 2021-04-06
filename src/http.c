@@ -112,7 +112,7 @@ http_connect(http_t *conn, int proto, char *proxy, char *host, int port,
 	conn->proto = proto;
 
 	if (proxy && *proxy) {
-		if (!conn_set(tconn, proxy)) {
+		if (!conn_set(tconn, proxy, true)) {
 			fprintf(stderr, _("Invalid proxy string: %s\n"), proxy);
 			return 0;
 		}
@@ -379,7 +379,7 @@ http_filename(const http_t *conn, char *filename)
 	}
 }
 
-inline static char
+inline static unsigned char
 decode_nibble(char n)
 {
 	if (n <= '9')
@@ -390,13 +390,13 @@ decode_nibble(char n)
 }
 
 inline static char
-encode_nibble(char n)
+encode_nibble(unsigned char n)
 {
 	return n > 9 ? n + 'a' - 10 : n + '0';
 }
 
 inline static void
-encode_byte(char dst[3], char n)
+encode_byte(char dst[3], unsigned char n)
 {
 	*dst++ = '%';
 	*dst++ = encode_nibble(n >> 4);
@@ -437,7 +437,7 @@ http_encode(char *s, size_t len)
 				break;
 			}
 
-			encode_byte(t + j, s[i]);
+			encode_byte(t + j, (unsigned char)s[i]);
 			j += 2;
 		}
 	}

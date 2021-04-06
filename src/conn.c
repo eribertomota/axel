@@ -50,7 +50,7 @@
  * Convert an URL to a conn_t structure.
  */
 int
-conn_set(conn_t *conn, const char *set_url)
+conn_set(conn_t *conn, const char *set_url, bool do_http_encode)
 {
 	char url[MAX_STRING];
 	char *i, *j;
@@ -94,7 +94,7 @@ conn_set(conn_t *conn, const char *set_url)
 	} else {
 		*i = 0;
 		snprintf(conn->dir, MAX_STRING, "/%s", i + 1);
-		if (conn->proto == PROTO_HTTP || conn->proto == PROTO_HTTPS)
+		if (do_http_encode && (conn->proto == PROTO_HTTP || conn->proto == PROTO_HTTPS))
 			http_encode(conn->dir, sizeof(conn->dir));
 	}
 	j = strchr(conn->dir, '?');
@@ -415,7 +415,7 @@ conn_info(conn_t *conn)
 			strlcpy(s, conn->http->headers->p, sizeof(s));
 		}
 
-		if (!conn_set(conn, s)) {
+		if (!conn_set(conn, s, true)) {
 			return 0;
 		}
 
